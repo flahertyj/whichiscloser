@@ -1,0 +1,12 @@
+<Alloy>
+	<TabGroup>
+		<Tab title="Tab 1" icon="KS_nav_ui.png">
+			<Window title="Generic Search">
+			</Window>
+		</Tab>
+		<Tab title="Tab 2" icon="KS_nav_views.png">
+			<Window title="Specific Search">
+			</Window>
+		</Tab>
+	</TabGroup>
+</Alloy>
