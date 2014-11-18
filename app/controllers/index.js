@@ -41,16 +41,18 @@ win.add(mapView);
 win.open();
 
 function getLocation() {
+	console.log("getLocation called.");
 	//Get the current position and set it to the mapview
-	Titanium.Geolocation.getCurrentPosition(function(e){
-	        var region={
-	            latitude: e.coords.latitude,
-	            longitude: e.coords.longitude,
-	            animate:true,
-	            latitudeDelta:0.005,
-	            longitudeDelta:0.005
-	        };
-	        mapView.setLocation(region);
+	Titanium.Geolocation.getCurrentPosition(function(e) {
+		console.log("Successfully called Titanium.Geolocation.getCurrentPosition.");
+	    var region = {
+	        latitude: e.coords.latitude,
+	        longitude: e.coords.longitude,
+	        animate:true,
+	        latitudeDelta:0.005,
+	        longitudeDelta:0.005
+	    };
+	    mapView.setLocation(region);
 	});
 }
 
@@ -58,6 +60,50 @@ function getLocation() {
 //    getLocation();
 //});
 
-//mapView.addEventListener('complete', function(evt){
-//    getLocation();
-//});
+mapView.addEventListener('complete', function(evt){
+	console.log("Complete event called.");
+	var intervalID = setInterval(function() {
+    	getLocation();
+    	clearInterval(intervalID);
+    	followLocation();
+	}, 3000);
+});
+
+function followLocation() {
+	setInterval(function() {
+		getLocation();
+	}, 5000);
+}
+
+setInterval(function() {
+	if (Ti.Geolocation.locationServicesEnabled) {
+		console.log("Geolocation services are enabled.");
+		Titanium.Geolocation.getCurrentPosition(function(e) {
+			console.log("get current position");
+			if (e.error) {
+				console.log("ERROR");
+	            console.log('Error: ' + e.error);
+	        }
+	        else {
+	        	//console.log("NO ERROR");
+	        	//getLocation();
+	        	
+			    //var region = {
+			    //    latitude: e.coords.latitude,
+			    //    longitude: e.coords.longitude,
+			    //    animate:true,
+			    //    latitudeDelta:0.005,
+			    //    longitudeDelta:0.005
+			    //};
+		
+			    //var locationFile = Titanium.Filesystem.getFile('location.txt');
+			    //console.log("LOCATION FILE:" + locationFile);
+				//if (locationFile) {
+				//	locationFile.write("lat: " + region.latitude.toString() + ", long: " + region.longitude.toString());
+				//}
+			}
+		});
+	} else {
+		console.log("Please enable geolocation services.");
+	}
+}, 5000);
