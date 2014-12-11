@@ -25,85 +25,204 @@ if (Titanium.Platform.name == 'android') {
 }
 
 var win = Ti.UI.createWindow({backgroundColor: 'white'});
+var tabGroup = Ti.UI.createTabGroup();
 
-var mapView = MapModule.createView({
-    userLocation: true,
-    mapType: MapModule.NORMAL_TYPE,
-    animate: true,
-    region: {latitude: 39.7392, longitude: -104.9847, latitudeDelta: 0.1, longitudeDelta: 0.1},
-    height: '100%',
-    top: 0,
-    left: 0,
-    width: '100%'
+var win1 = Titanium.UI.createWindow({
+    title: 'Tab 1',
+    backgroundColor: '#fff'
 });
 
-win.add(mapView);
-win.open();
+var tab1 = Titanium.UI.createTab({
+    icon: 'KS_nav_views.png',
+    title: 'Tab 1',
+    window: win1
+});
+ 
+var button = Titanium.UI.createButton({
+    color: '#999',
+    title: 'Show Modal Window',
+    width: 180,
+    height: 35
+});
 
-function getLocation() {
-	console.log("getLocation called.");
-	//Get the current position and set it to the mapview
-	Titanium.Geolocation.getCurrentPosition(function(e) {
-		console.log("Successfully called Titanium.Geolocation.getCurrentPosition.");
-	    var region = {
-	        latitude: e.coords.latitude,
-	        longitude: e.coords.longitude,
-	        animate:true,
-	        latitudeDelta:0.005,
-	        longitudeDelta:0.005
-	    };
-	    mapView.setLocation(region);
+var searchBar = Ti.UI.createSearchBar({
+	barColor:'#000', 
+    showCancel:true,
+    height:43,
+    top:0
+});
+
+var searchText = undefined;
+
+searchBar.addEventListener('return', function(evt){
+	Ti.API.info("RETURN PRESSED ON SEARCH BAR!!! Searched for: " + this.value);
+	searchText = this.value;
+	createMapView();
+});
+ 
+win1.add(button);
+win1.add(searchBar);
+
+//
+// create controls tab and root window
+//
+var win2 = Titanium.UI.createWindow({
+    title: 'Tab 2',
+    backgroundColor: '#fff'
+});
+
+var tab2 = Titanium.UI.createTab({
+    icon: 'KS_nav_ui.png',
+    title: 'Tab 2',
+    window: win2
+});
+
+//
+//  add tabs
+//
+tabGroup.addTab(tab1);
+tabGroup.addTab(tab2);
+ 
+// open tab group
+tabGroup.open();
+
+var ipAddress = Titanium.Platform.address;
+
+var location = undefined;
+var testLat = 39.758140;
+var testLong = -105.015249;
+var metersInAMile = 1609.34;
+var testDefaultRadius = metersInAMile * 2.5;
+var date = new Date();
+var mapView = undefined;
+
+function createMapView() {
+	mapView = MapModule.createView({
+	    userLocation: true,
+	    mapType: MapModule.NORMAL_TYPE,
+	    animate: true,
+	    region: {latitude: testLat, longitude: testLong, latitudeDelta: 0.1, longitudeDelta: 0.1},
+	    height: '100%',
+	    top: 0,
+	    left: 0,
+	    width: '100%'
 	});
+
+	mapView.addEventListener('complete', function(evt){
+		Ti.API.info("Complete event called.");
+		var intervalID = setInterval(function() {
+	    	//setMapLocation();
+	    	//followLocation();
+	    	//testPlaces();
+	    	getCurrentLocation();
+	    	clearInterval(intervalID);
+		}, 2500);
+	});
+
+	win.add(mapView);
+	win.open();
 }
 
-//Titanium.Geolocation.addEventListener('location',function() {
-//    getLocation();
-//});
-
-mapView.addEventListener('complete', function(evt){
-	console.log("Complete event called.");
-	var intervalID = setInterval(function() {
-    	getLocation();
-    	clearInterval(intervalID);
-    	followLocation();
-	}, 3000);
-});
+function setMapLocation() {
+	region = getCurrentRegion();
+	if (mapView) {
+		mapView.setLocation(region);
+	}
+}
 
 function followLocation() {
 	setInterval(function() {
-		getLocation();
+		setMapLocation();
 	}, 5000);
 }
 
-setInterval(function() {
-	if (Ti.Geolocation.locationServicesEnabled) {
-		console.log("Geolocation services are enabled.");
-		Titanium.Geolocation.getCurrentPosition(function(e) {
-			console.log("get current position");
-			if (e.error) {
-				console.log("ERROR");
-	            console.log('Error: ' + e.error);
-	        }
-	        else {
-	        	//console.log("NO ERROR");
-	        	//getLocation();
-	        	
-			    //var region = {
-			    //    latitude: e.coords.latitude,
-			    //    longitude: e.coords.longitude,
-			    //    animate:true,
-			    //    latitudeDelta:0.005,
-			    //    longitudeDelta:0.005
-			    //};
-		
-			    //var locationFile = Titanium.Filesystem.getFile('location.txt');
-			    //console.log("LOCATION FILE:" + locationFile);
-				//if (locationFile) {
-				//	locationFile.write("lat: " + region.latitude.toString() + ", long: " + region.longitude.toString());
-				//}
-			}
-		});
-	} else {
-		console.log("Please enable geolocation services.");
-	}
-}, 5000);
+function getCurrentLocation() {
+	Ti.API.info("getCurrentLocation called.");
+	serverKey = Ti.App.Properties.getString("ti.android.google.server.api.key");
+	url = "https://www.googleapis.com/geolocation/v1/geolocate?key=" + serverKey;
+	xhr = Titanium.Network.createHTTPClient({
+		onload: function(){
+      		response = JSON.parse(this.responseText);
+      		location = response.location;
+      		testPlaces(location);
+      		Ti.API.info("Location: " + location);
+		},
+		onerror: function(e) {
+			Ti.API.info("Error trying to get geolocation: " + e.error);
+		},
+		timeout : 5000// 5 seconds.
+	});
+	/*xhr.onload = function() {
+	  Ti.API.info(this.responseText);
+      location = JSON.parse(this.responseText);
+      Ti.API.info("Location: " + location);
+      testDirections(location.location);
+      return location.location;
+	};*/
+
+    xhr.open('POST', url);
+    xhr.send();
+}
+
+function testPlaces(origin) {
+	serverKey = Ti.App.Properties.getString("ti.android.google.server.api.key");
+	url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + origin.lat + "," + origin.lng +
+		"&radius=" + testDefaultRadius + "&name=" + searchText + "&key=" + serverKey;
+	xhr = Titanium.Network.createHTTPClient();
+
+	xhr.onload = function() {
+      var jsonObject = JSON.parse(this.responseText);
+      if (jsonObject && jsonObject.results.length > 0) {
+      	testPlaceDetails(jsonObject.results[0].place_id);
+      	destination = jsonObject.results[0].geometry.location;
+      	testDirections(origin, destination);
+      }
+	};
+
+    xhr.open('GET', url);
+    xhr.send();
+}
+
+function testPlaceDetails(placeId) {
+	serverKey = Ti.App.Properties.getString("ti.android.google.server.api.key");
+	url = "https://maps.googleapis.com/maps/api/place/details/json?placeid=" + placeId + "&key=" + serverKey;
+	xhr = Titanium.Network.createHTTPClient();
+
+	xhr.onload = function() {
+      var jsonObject = JSON.parse(this.responseText);
+      result = jsonObject.result;
+      var dayOfWeek = date.getDay() - 1;
+      if (dayOfWeek < 0) {
+      	dayOfWeek = 6;
+      }
+      Ti.API.info(result.name + " at address: " + result.formatted_address +
+      	" hours today: " + result.opening_hours.weekday_text[dayOfWeek] + ".");
+	};
+
+    xhr.open('GET', url);
+    xhr.send();
+}
+
+function testDirections(origin, destination) {
+	serverKey = Ti.App.Properties.getString("ti.android.google.server.api.key");
+	url = "https://maps.googleapis.com/maps/api/directions/json?userip=" + ipAddress +
+		  "&origin=" + origin.lat + "," + origin.lng + "&destination=" +
+		  destination.lat + "," + destination.lng + "&key=" + serverKey;
+	xhr = Titanium.Network.createHTTPClient();
+
+	xhr.onload = function() {
+      var jsonObject = JSON.parse(this.responseText);
+      if (jsonObject && jsonObject.routes) {
+	      var directions = jsonObject.routes[0];
+	      var route = directions.legs[0];
+	      Ti.API.info("Directions: Start Address - " + route.start_address + "\nEnd Address - " + route.end_address);
+	      for (i = 0; i < route.steps.length; ++i) {
+	      	var stepNum = i + 1;
+	      	Ti.API.info("Step #" + stepNum + " - " + route.steps[i].html_instructions);
+	      }
+	  }
+	};
+
+    xhr.open('GET', url);
+    xhr.send();
+}

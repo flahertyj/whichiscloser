@@ -14,6 +14,7 @@
     <guid>a6c9e898-629c-424d-b289-6056cf4d0ddb</guid>
     <property name="ti.ui.defaultunit" type="string">dp</property>
     <property name="ti.android.google.map.api.key">AIzaSyBSVtTh7ITjS8qM3Bo-MzThIK4xHgK-XTc</property>
+    <property name="ti.android.google.server.api.key">AIzaSyD3V2VqP2LChnjBAprGbsE2LpgXtF4BA-U</property>
     <ios>
         <plist>
             <dict>
