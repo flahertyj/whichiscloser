@@ -1,5 +1,15 @@
 var MapModule = require('ti.map');
 
+var ipAddress = Titanium.Platform.address;
+
+var location = undefined;
+var testLat = 39.758140;
+var testLng = -105.015249;
+var metersInAMile = 1609.34;
+var testDefaultRadius = metersInAMile * 2.5;
+var date = new Date();
+var mapView = undefined;
+
 if (Titanium.Platform.name == 'android') {
 	var rc = MapModule.isGooglePlayServicesAvailable();
 	switch (rc) {
@@ -86,41 +96,44 @@ tabGroup.addTab(tab2);
 // open tab group
 tabGroup.open();
 
-var ipAddress = Titanium.Platform.address;
-
-var location = undefined;
-var testLat = 39.758140;
-var testLong = -105.015249;
-var metersInAMile = 1609.34;
-var testDefaultRadius = metersInAMile * 2.5;
-var date = new Date();
-var mapView = undefined;
-
 function createMapView() {
-	mapView = MapModule.createView({
-	    userLocation: true,
-	    mapType: MapModule.NORMAL_TYPE,
-	    animate: true,
-	    region: {latitude: testLat, longitude: testLong, latitudeDelta: 0.1, longitudeDelta: 0.1},
-	    height: '100%',
-	    top: 0,
-	    left: 0,
-	    width: '100%'
-	});
+	if (mapView == undefined) {// Don't want to create a map when one already exists.
+		mapView = MapModule.createView({
+		    userLocation: true,
+		    mapType: MapModule.NORMAL_TYPE,
+		    animate: true,
+		    region: {latitude: testLat, longitude: testLng, latitudeDelta: 0.1, longitudeDelta: 0.1},
+		    height: '100%',
+		    top: 0,
+		    left: 0,
+		    width: '100%'
+		});
+	
+		mapView.addEventListener('complete', function(evt){
+			Ti.API.info("Complete event called.");
+			var intervalID = setInterval(function() {
+		    	//setMapLocation();
+		    	//followLocation();
+		    	//testPlaces();
+		    	getCurrentLocation();
+		    	clearInterval(intervalID);
+			}, 2500);
+		});
+	
+		win.add(mapView);
+		win.open();
+	}
+}
 
-	mapView.addEventListener('complete', function(evt){
-		Ti.API.info("Complete event called.");
-		var intervalID = setInterval(function() {
-	    	//setMapLocation();
-	    	//followLocation();
-	    	//testPlaces();
-	    	getCurrentLocation();
-	    	clearInterval(intervalID);
-		}, 2500);
+function createAnnotation(lat, lng) {
+	return MapModule.createAnnotation({
+    	latitude: lat,
+        longitude: lng,
+        //title: 'Test Annotation',
+        //subtitle: 'Annotation that is a red pin',
+        //animate: false,
+        //pincolor: Ti.Map.ANNOTATION_RED
 	});
-
-	win.add(mapView);
-	win.open();
 }
 
 function setMapLocation() {
@@ -175,6 +188,11 @@ function testPlaces(origin) {
       if (jsonObject && jsonObject.results.length > 0) {
       	testPlaceDetails(jsonObject.results[0].place_id);
       	destination = jsonObject.results[0].geometry.location;
+      	annotation = createAnnotation(testLat, testLng);
+      	annotation2 = createAnnotation(testLat + 0.005, testLng + 0.005);
+      	annotations = [];
+      	annotations.push(annotation, annotation2);
+      	mapView.annotations = annotations;
       	testDirections(origin, destination);
       }
 	};
